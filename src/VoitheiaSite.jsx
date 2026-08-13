@@ -171,17 +171,21 @@ export default function VoitheiaSite() {
 
     document.body.classList.add("voitheia-cursor-active");
 
-    let mx = window.innerWidth / 2;
-    let my = window.innerHeight / 2;
+    let mx = -100;
+    let my = -100;
     let rx = mx;
     let ry = my;
+    if (cursorDot.current) cursorDot.current.style.opacity = "0";
+    if (cursorRing.current) cursorRing.current.style.opacity = "0";
 
     function onMouseMove(e) {
       mx = e.clientX;
       my = e.clientY;
       if (cursorDot.current) {
         cursorDot.current.style.transform = `translate(${mx}px, ${my}px)`;
+        cursorDot.current.style.opacity = "1";
       }
+      if (cursorRing.current) cursorRing.current.style.opacity = "0.6";
       const target = e.target;
       const interactive = target.closest && target.closest('a, button, [data-cursor="hover"]');
       if (cursorRing.current) {
@@ -221,10 +225,33 @@ export default function VoitheiaSite() {
     return () => window.removeEventListener("mousemove", onMove);
   }, []);
 
+  // reset host page so the default Vite template (#root centering, dark
+  // body background, max-width) doesn't cage or crop the site
+  useEffect(() => {
+    const styleEl = document.createElement("style");
+    styleEl.setAttribute("data-voitheia-reset", "true");
+    styleEl.textContent = `
+      html, body { margin:0; padding:0; width:100%; min-height:100%; background:#FFF8F5; }
+      #root { max-width:none !important; width:100%; margin:0; padding:0; text-align:left; display:block; }
+      body { display:block !important; place-items:unset !important; }
+      html::-webkit-scrollbar{ width:10px; height:10px; }
+      html::-webkit-scrollbar-track{ background:transparent; }
+      html::-webkit-scrollbar-thumb{
+        background:linear-gradient(#E4A339, #FF6B6B);
+        border-radius:20px; border:2px solid #FFF8F5; background-clip:padding-box;
+      }
+      html::-webkit-scrollbar-thumb:hover{ background:linear-gradient(#B87A1F, #E14F4F); background-clip:padding-box; }
+      html{ scrollbar-width: thin; scrollbar-color: #FF6B6B transparent; }
+    `;
+    document.head.appendChild(styleEl);
+    return () => styleEl.remove();
+  }, []);
+
   return (
     <div className="vt-root">
       <style>{`
         .vt-root{
+          width:100%;
           --ink:#1C2B22;
           --ink-soft:#4A5A4E;
           --paper:#FFF8F5;
@@ -277,20 +304,6 @@ export default function VoitheiaSite() {
           background:rgba(255,107,107,0.1);opacity:1;
         }
         @media (hover:none){.vt-cursor-dot,.vt-cursor-ring{display:none;}}
-
-        .vt-root .vt-scroll-area{
-          scrollbar-width: thin;
-          scrollbar-color: var(--coral) transparent;
-        }
-        .vt-root ::-webkit-scrollbar{ width:10px; height:10px; }
-        .vt-root ::-webkit-scrollbar-track{ background:transparent; }
-        .vt-root ::-webkit-scrollbar-thumb{
-          background:linear-gradient(var(--gold), var(--coral));
-          border-radius:20px;
-          border:2px solid var(--paper);
-          background-clip:padding-box;
-        }
-        .vt-root ::-webkit-scrollbar-thumb:hover{ background:linear-gradient(var(--gold-deep), var(--coral-deep)); background-clip:padding-box; }
 
         .eyebrow{display:flex;align-items:center;gap:10px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;letter-spacing:0.14em;text-transform:uppercase;color:var(--leaf-deep);margin-bottom:18px;}
         .eyebrow .glow-dot{width:8px;height:8px;border-radius:50%;background:radial-gradient(circle at 35% 30%, #FFD1CE, var(--coral) 60%, var(--coral-deep));box-shadow:0 0 0 4px rgba(255,107,107,0.16);flex:none;}
